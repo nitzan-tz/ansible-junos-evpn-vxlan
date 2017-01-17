@@ -1,0 +1,46 @@
+overlay:
+    tenants:
+{% for name, tenant in overlay.tenants.iteritems() %}
+      {{ name }}:
+{% if tenant_has_l3 is defined and tenant_has_l3 == "true" %}
+        lo0_ip: {{ generate_tenant.loopback_pool | ipsubnet(generate_tenant.loopback_size, tenant.id ) | ipaddr(id) | ipaddr('address') }}
+{% endif %}
+        id: {{tenant.id}}
+        bridge_domains:
+{% for bd in tenant.bridge_domains %}
+        - vlan_id: {{bd.vlan_id}}
+          vni_id: {{bd.vni_id}}
+{% if bd.description is defined %}
+          description: {{bd.description}}
+{% endif %}
+{% if tenant_has_l3 is defined and tenant_has_l3 == "true" and bd.network is defined %}
+          vip_ip: {{bd.vip_ip}}
+          mask: {{bd.network | ipaddr('prefix')}}
+{% if bd.network is defined %}
+          local_ip: {{ bd.network | ipaddr(id) | ipaddr('address') }}
+{% endif %}
+{% if bd.input_filter is defined %}
+          input_filter: {{ bd.input_filter }}
+{% endif %}
+{% if bd.output_filter is defined %}
+          output_filter: {{ bd.output_filter }}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% if tenant_has_l3 is defined and tenant_has_l3 == "true" %}
+{% if tenant.static_route is defined %}
+        static_route:
+{% for route in tenant.static_route %}
+        - route: {{route.route}}
+          next_hop: {{route.next_hop}}
+{% endfor %}
+{% endif %}
+{% if tenant.import_tenants is defined %}
+        import_tenants:
+{% for import_tenant in tenant.import_tenants %}
+        - name: {{import_tenant.name}}
+          id: {{import_tenant.id}}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endfor %}

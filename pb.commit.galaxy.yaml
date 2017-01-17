@@ -1,0 +1,24 @@
+---
+# This playbook will only apply configuration to all of the devices
+
+- name: Apply configuration
+  hosts: spine,leaf,s-spine
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - include_vars: "{{ topology_file }}"
+  roles:
+    - Juniper.junos
+  tasks:
+    - set_fact: mydate="{{lookup('pipe','date +%Y-%m-%d-%H%M')}}"
+    - name: Pushing config ... please wait
+      junos_install_config:
+        host: "{{ ansible_ssh_host }}"
+        port: "{{ netconf_port }}"
+        user: "{{ ansible_ssh_user }}"
+        passwd: "{{ ansible_ssh_pass }}"
+        file: "{{ junos_conf }}"
+        overwrite: yes
+        replace: no
+        timeout: 60
+        diffs_file: "config_diff//{{ inventory_hostname }}-{{ mydate }}.conf"

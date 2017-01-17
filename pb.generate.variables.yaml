@@ -1,0 +1,31 @@
+---
+- name: Generate variables
+  hosts: [spine,leaf,s-spine]
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - include_vars: "{{ topology_file }}"
+    - include_vars: tenants-vlan-vni.yaml
+  vars:
+    generate_p2p:
+      nbr_networks: 300
+      network_size: 31
+      network_pool: 10.15.8.0/22
+    generate_tenant:
+      tenant_start_id: 100
+      vni_prefix: 11  
+      loopback_pool: 100.100.0.0/16
+      loopback_size: 24      
+  roles:
+############Enable the following line if you have need new p2p address (check that it dosent change all you network ) 
+    - generate-p2p-ips
+    - generate-tenant-vni
+
+- name: Generate variables for underlay
+  hosts: [spine, leaf, s-spine]
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - include_vars: "{{ topology_file }}"
+  roles:
+    - generate-underlay-bgp

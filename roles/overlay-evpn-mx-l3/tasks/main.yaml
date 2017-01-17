@@ -1,0 +1,5 @@
+---
+- name: Building EVPN-VXLAN configuration for SPINE / MX / L3
+  template: >
+    src=main.conf.j2
+    dest={{ build_dir }}/overlay.spine.mx.conf.part

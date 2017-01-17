@@ -1,0 +1,74 @@
+
+########################################################################
+# System variable used to define temporary directory
+# please update tmp_dir variable if needed
+########################################################################
+tmp_dir: /tmp/build
+build_dir: "{{ tmp_dir }}/{{ inventory_hostname }}/tmp"
+junos_conf: "config/{{ inventory_hostname }}.conf"
+
+################################################################################
+# Global Variables used to generate the common part of the configuration
+# please update these variable and the template as needed to match your environment
+################################################################################
+#vqfx: false
+
+global:
+    root_hash: $5$KEYdmELB$zEOrmcfaIJcRtEtpmHr594taaANR8V2ZRTC7GfO8uz1
+    users:
+     nitzan:
+      user_class: super-user
+      user_password_hash: $gggsss232kkk
+     oasis:
+      user_class: super-user
+      user_password_hash: $1$gyGdvaJHE14kak4LSwKJ79FjXn0
+     ansible:
+      user_class: super-user
+      user_password_hash: $1$O/KhX9B9$jmUUM0B6FHNeP9NGAqTco1      
+    login_message: This is the property of Oasis Tech. Do not login without express permission.
+    time_zone: Asia/Jerusalem
+    name_servers:
+    - 8.8.8.8
+    - 8.8.4.4
+    ntp_servers:
+    - 192.114.62.250
+    syslog_hosts:
+    - 192.168.5.107
+    erspan_host: 192.168.5.107
+    mgmt_address:
+     - 10.8.20.0/23
+     - 192.168.5.0/24
+     - 192.168.159.0/24
+     - 127.0.0.1
+    snmp:
+        location: "Oasis"
+        contact: Nitzan
+        polling:
+        - community: JS-OASIS
+        clients:
+        - 192.168.5.107
+        - 192.168.5.108
+    routes:
+      static:
+        0.0.0.0/0: 192.168.5.1
+
+############################################################################
+###   Physical interfaces name                                           ###
+############################################################################
+topo:
+  spine-01:
+    et-0/0/3: { name: et-0/0/3,    peer: leaf-01,      pport: et-0/0/50,     type: ebgp, link: 1,   linkend: 1 , connector: TEST 123}
+###    et-0/0/31: { name: et-0/0/31, speed: 100g,    peer: s-spine-01,      pport: et-0/0/31,     type: ebgp, link: 2,   linkend: 1 , connector: TEST 123}
+
+  leaf-01:
+    et-0/0/50: { name: et-0/0/50,    peer: spine-01,     pport: et-0/0/3,     type: ebgp, link: 1,   linkend: 2 , connector: TEST 123}
+    port2: { name: ge-0/0/4,    peer: router-1,       pport: unknown }
+    port3: { name: ge-0/0/5,    peer: router-2,       pport: unknown }
+    port8: { name: xe-0/0/8,    peer: lb02,       pport: 1/3.1 }
+    port9: { name: xe-0/0/9,    peer: lb02,       pport: 1/4.1 }
+    port10: { name: xe-0/0/10,    peer: lb01,       pport: 1/3.1 }
+    port11: { name: xe-0/0/11,    peer: lb01,       pport: 1/4.1 }    
+
+###  s-spine-01:
+###    et-0/0/31: { name: et-0/0/31, speed: 100g,   peer: spine-01,     pport: et-0/0/31,     type: ebgp, link: 2,   linkend: 2 , connector: TEST 123}
+

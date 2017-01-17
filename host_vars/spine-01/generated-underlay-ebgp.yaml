@@ -1,0 +1,11 @@
+
+underlay:
+    local:
+        asn: 65001
+    neighbors:
+      - interface: et-0/0/3
+        name: leaf-01
+        peer_interface: et-0/0/50
+        connector: TEST 123
+        peer_ip: 10.15.8.1
+        local_ip: 10.15.8.0

@@ -1,0 +1,5 @@
+---
+- name: Building EVPN-VXLAN configuration for QFX / L2
+  template: >
+    src=main.conf.j2
+    dest={{ build_dir }}/overlay.qfx.l2.conf.part

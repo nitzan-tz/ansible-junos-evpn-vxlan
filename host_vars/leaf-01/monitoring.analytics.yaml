@@ -1,0 +1,6 @@
+analytics:
+    collector: 192.168.5.107
+    collector_port: 50020
+    interfaces:
+        -   name: et-0/0/48
+        -   name: xe-0/0/4

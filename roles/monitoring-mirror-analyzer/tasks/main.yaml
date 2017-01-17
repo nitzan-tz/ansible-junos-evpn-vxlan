@@ -1,0 +1,5 @@
+---
+- name: Add Mirror or Analyzer Configuration
+  template: >
+    src=main.conf.j2
+    dest={{ build_dir }}/monitoring.mirror-analyzer.conf.part

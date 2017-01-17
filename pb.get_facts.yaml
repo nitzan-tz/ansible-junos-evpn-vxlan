@@ -1,0 +1,22 @@
+# This task gets all Junos facts from all devices
+- name: Get facts
+  hosts: all
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - include_vars: "{{ topology_file }}"
+  roles:
+    - Juniper.junos
+  tasks:
+    - set_fact: mydate="{{lookup('pipe','date +%Y-%m-%d-%H%M')}}"
+    - name: Check if directory device_facts/ is present
+      file: path=device_facts/ state=directory
+      run_once: true
+
+    - name: Getting facts from device ... please wait
+      junos_get_facts:
+        host: "{{ ansible_ssh_host }}"
+        port: "{{ netconf_port }}"
+        user: "{{ ansible_ssh_user }}"
+        passwd: "{{ ansible_ssh_pass }}"
+        savedir: "device_facts"

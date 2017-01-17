@@ -1,0 +1,24 @@
+overlay:
+    tenants:
+      VRF_2:
+        id: 31
+        bridge_domains:
+        - vlan_id: 3110
+          vni_id: 13110
+        - vlan_id: 3011
+          vni_id: 13011
+      VRF_3:
+        id: 32
+        bridge_domains:
+        - vlan_id: 3210
+          vni_id: 13210
+        - vlan_id: 3211
+          vni_id: 13211
+      VRF_1:
+        id: 30
+        bridge_domains:
+        - vlan_id: 3000
+          vni_id: 13000
+          description: TTT
+        - vlan_id: 3001
+          vni_id: 13001

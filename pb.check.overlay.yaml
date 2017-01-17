@@ -1,0 +1,59 @@
+
+- name: Checking Overlay health
+  hosts: [spine,leaf]
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - include_vars: "{{ topology_file }}"
+  vars:
+    credential:
+      host: "{{ ansible_ssh_host }}"
+      port: "{{ netconf_port }}"
+      username: "{{ ansible_ssh_user }}"
+      password: "{{ ansible_ssh_pass }}"
+  roles:
+    - Juniper.junos
+  tasks:
+
+##################################################################
+## Check Connectivity between Overlay peers
+##    Ping are crafted with source and dest IP and TTL one to make
+##    sure they don't get routed on the fabric
+##################################################################
+    - name: "Check connectivity between Overlay neighbor using Ping (galaxy/junos_ping)"
+      with_items: "{{ overlay.neighbors }}"
+      junos_ping:
+        host: "{{ ansible_ssh_host }}"
+        port: "{{ netconf_port }}"
+        user: "{{ ansible_ssh_user }}"
+        passwd: "{{ ansible_ssh_pass }}"
+        dest_ip: "{{ item }}"
+        source_ip: "{{ loopback_ip }}"
+        ttl: 1
+
+##################################################################
+## Check if Overlay BGP peers between Spine/Leaf are in Established status
+##################################################################
+    - name: "Check BGP Peer between Spine/Leaf Status (core/junos_command)"
+      junos_command:
+        commands:
+          - "show bgp neighbor {{ item }}"
+        provider: "{{ credential }}"
+        waitfor:
+          - "result[0]['bgp-information']['bgp-peer']['peer-state'] eq Established"
+      with_items: "{{ overlay.neighbors }}"
+      register: bgp
+
+##################################################################
+## Check if Overlay BGP peers between Spine/Leaf are in Established status
+##################################################################
+    - name: "Check BGP Peer between Spine/RR Status (core/junos_command)"
+      junos_command:
+        commands:
+          - "show bgp neighbor {{ item }}"
+        provider: "{{ credential }}"
+        waitfor:
+          - "result[0]['bgp-information']['bgp-peer']['peer-state'] eq Established"
+      with_items: "{{ overlay.rr_bgp }}"
+      when: overlay.rr_bgp is defined
+      register: bgp_rr

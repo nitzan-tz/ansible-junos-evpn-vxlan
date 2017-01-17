@@ -1,0 +1,67 @@
+interfaces {
+{% for neighbor in underlay.neighbors %}
+    {{ neighbor.interface }} {
+        description "{{ neighbor.name }} {{ neighbor.peer_interface }} connector {{ neighbor.connector }}";
+        mtu 9216;
+        unit 0 {
+            family inet {
+               address {{ neighbor.local_ip }}/31;
+            }
+        }
+    }
+{% endfor %}
+}
+{% for neighbor in underlay.neighbors %}
+{% if neighbor.speed is defined and neighbor.speed == "100g" %}
+chassis {
+    fpc {{ neighbor.interface.split('/')[-3].split('-')[-1] }} {
+        pic {{ neighbor.interface.split('/')[-2] }} {
+            port {{ neighbor.interface.split('/')[-1] }} {
+                speed 100g;
+            }
+        }
+    }
+}
+{% endif %}
+{% endfor %}
+protocols {
+    ospf {
+        area 0.0.0.0 {
+{% for neighbor in underlay.neighbors %}
+            interface {{ neighbor.interface }} {
+				interface-type p2p;
+				hello-interval 3;
+				authentication {
+					md5 2 key "{{ underlay_ospf_pass_hash }}";
+				}
+				bfd-liveness-detection {
+					version automatic;
+					minimum-interval 300;
+					multiplier 3;
+					detection-time {
+						threshold 1000;
+					}
+				}
+			}
+			
+			
+{% endfor %}
+            interface lo0 passive;
+        }
+    }
+}
+
+routing-options {
+    router-id {{ loopback_ip }};
+    forwarding-table {
+        export PFE_ECMP;
+    }
+}
+
+policy-options {
+    policy-statement PFE_ECMP {
+        then {
+            load-balance per-packet;
+        }
+    }
+}

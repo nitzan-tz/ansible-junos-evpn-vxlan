@@ -1,0 +1,8 @@
+role:
+    ESXI:
+     mode: trunk    
+     vlans: [ 11, 22, 33 ]
+    KAFKA:
+     mode: access    
+     vlans: [ 3020 ]
+    

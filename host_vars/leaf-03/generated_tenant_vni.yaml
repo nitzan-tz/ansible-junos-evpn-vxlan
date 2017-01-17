@@ -1,0 +1,17 @@
+overlay:
+    tenants:
+      VRF_2:
+        id: 101
+        bridge_domains:
+        - vlan_id: 210
+          vni_id: 11210
+        - vlan_id: 211
+          vni_id: 11211
+      VRF_1:
+        id: 100
+        bridge_domains:
+        - vlan_id: 200
+          vni_id: 11200
+          description: TTT
+        - vlan_id: 201
+          vni_id: 11201

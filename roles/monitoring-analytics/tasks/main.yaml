@@ -1,0 +1,5 @@
+---
+- name: Add Analytics Configuration and Interfaces
+  template: >
+    src=main.conf.j2
+    dest={{ build_dir }}/monitoring.analytics.conf.part

@@ -1,0 +1,18 @@
+
+underlay:
+    leaf: true
+    local:
+        asn: 65001
+    neighbors:
+      - interface: em4
+        name: spine-02
+        peer_interface: port3
+        asn: 65012
+        peer_ip: 172.21.0.12
+        local_ip: 172.21.0.13
+      - interface: et-0/0/31
+        name: spine-01
+        peer_interface: port3
+        asn: 65011
+        peer_ip: 172.21.0.8
+        local_ip: 172.21.0.9

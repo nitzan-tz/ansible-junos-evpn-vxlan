@@ -1,0 +1,6 @@
+overlay:
+    vlan_normalized: False
+    local:
+        asn: 65301
+    neighbors: [ 10.15.0.11, 10.15.0.12, 10.15.0.13, 10.15.0.14]   ## Used by Leaf
+    remote_gw: [  ]   ## Used by Leaf

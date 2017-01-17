@@ -1,0 +1,5 @@
+---
+- name: Building EVPN-VXLAN configuration for Access Ports
+  template: >
+    src=main.conf.j2
+    dest={{ build_dir }}/overlay.access.conf.part

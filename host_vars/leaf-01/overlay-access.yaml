@@ -1,0 +1,58 @@
+
+access:
+    nbr_ae: 100
+    interfaces:
+        -   name: "{{ topo[inventory_hostname].port2.name }}"
+            description: "{{ topo[inventory_hostname].port2.peer }}"
+            mode: access
+            vlans: [ 3000 ]
+            mtu: 9216
+        -   name: "{{ topo[inventory_hostname].port3.name }}"
+            description: "{{ topo[inventory_hostname].port3.peer }}"
+            mode: access
+            vlans: [ 3110 ]
+            mtu: 9212
+        -   name: ae11
+            mode: trunk
+            esi_neighbor: spine-01
+            mtu: 9212            
+            vlans: [ 3302 ]
+            lacp_mode: active
+            description: "lb01 internal "
+        -   name: "{{ topo[inventory_hostname].port10.name }}"
+            description: "{{ topo[inventory_hostname].port10.peer }} {{ topo[inventory_hostname].port10.pport }}"
+            mode: aggregate
+            parent: ae11
+        -   name: ae12
+            mode: trunk
+            esi_neighbor: spine-01
+            mtu: 9212            
+            vlans: [ 3303 ]
+            lacp_mode: active
+            description: "lb01 external "
+        -   name: "{{ topo[inventory_hostname].port11.name }}"
+            description: "{{ topo[inventory_hostname].port11.peer }} {{ topo[inventory_hostname].port11.pport }}"
+            mode: aggregate
+            parent: ae12         
+        -   name: ae21
+            mode: trunk
+            esi_neighbor: spine-01
+            mtu: 9212            
+            vlans: [ 3302 ]
+            lacp_mode: active
+            description: "lb02 internal "
+        -   name: "{{ topo[inventory_hostname].port8.name }}"
+            description: "{{ topo[inventory_hostname].port8.peer }} {{ topo[inventory_hostname].port8.pport }}"
+            mode: aggregate
+            parent: ae21
+        -   name: ae22
+            mode: trunk
+            esi_neighbor: spine-01
+            mtu: 9212            
+            vlans: [ 3303 ]
+            lacp_mode: active
+            description: "lb02 external"
+        -   name: "{{ topo[inventory_hostname].port9.name }}"
+            description: "{{ topo[inventory_hostname].port9.peer }} {{ topo[inventory_hostname].port9.pport }}"
+            mode: aggregate
+            parent: ae22            

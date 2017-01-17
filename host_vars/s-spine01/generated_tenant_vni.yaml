@@ -1,0 +1,59 @@
+overlay:
+    tenants:
+      VRF_2:
+        lo0_ip: 101.0.31.1
+        id: 31
+        bridge_domains:
+        - vlan_id: 3110
+          vni_id: 13110
+          vip_ip: 10.152.100.1
+          mask: 22
+          local_ip: 10.152.100.1
+        - vlan_id: 3011
+          vni_id: 13011
+          vip_ip: 10.1.3.254
+          mask: 22
+          local_ip: 10.1.0.1
+        import_tenants:
+        - name: VRF_1
+          id: 30
+      VRF_3:
+        lo0_ip: 101.0.32.1
+        id: 32
+        bridge_domains:
+        - vlan_id: 3210
+          vni_id: 13210
+          vip_ip: 10.152.120.1
+          mask: 22
+          local_ip: 10.152.120.1
+        - vlan_id: 3211
+          vni_id: 13211
+          vip_ip: 10.1.31.254
+          mask: 22
+          local_ip: 10.1.28.1
+        import_tenants:
+        - name: VRF_1
+          id: 30
+      VRF_1:
+        lo0_ip: 101.0.30.1
+        id: 30
+        bridge_domains:
+        - vlan_id: 3000
+          vni_id: 13000
+          description: TTT
+          vip_ip: 10.152.200.1
+          mask: 22
+          local_ip: 10.152.200.1
+        - vlan_id: 3001
+          vni_id: 13001
+          vip_ip: 10.152.204.1
+          mask: 22
+          local_ip: 10.152.204.1
+        static_route:
+        - route: 0.0.0.0/0
+          next_hop: 10.152.204.29
+        import_tenants:
+        - name: VRF_2
+          id: 31
+        - name: VRF_3
+          id: 32

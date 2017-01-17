@@ -1,0 +1,637 @@
+
+{# This config is common to all Junos device types. For it to be generated the 'common' role must be included in the platform specific play file. #}
+system {
+    host-name {{ inventory_hostname }};
+{# the location is based on whether this is site 1 or site 2. Using the variables in this way you apply site specific values without having to use conditional checks. #}
+    time-zone {{ global.time_zone }};
+    root-authentication {
+        encrypted-password "{{ global.root_hash }}";
+    }
+    arp {
+        aging-timer 2;
+    }
+    name-server {
+{% for name_server in global.name_servers %}
+        {{ name_server }};
+{% endfor %}
+    }
+    login {
+        class backdoor {
+        	permissions [ maintenance secret view view-configuration ];
+        	allow-commands "(quit)|(start shell)|(show configuration)";
+        	deny-commands "[^(quit)]";
+        }
+        class looker {
+        	permissions [ secret view view-configuration ];
+        	allow-commands "(quit)|(show.*)";
+        	deny-commands "[^(quit)]";
+        }
+{% for name , username in global.users.iteritems() %}
+        user {{ name }} {
+            class {{ username.user_class }};
+            authentication {
+                encrypted-password "{{ username.user_password_hash }}";
+            }
+        }
+{% endfor %}
+    }
+    services {
+        netconf {
+            ssh;
+        }
+        ssh {
+            root-login allow;
+            protocol-version v2;
+            connection-limit 10;
+            rate-limit 10;
+        }
+    }
+    login {
+        message "{{ global.login_message }} ";
+    }
+    syslog  {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any notice;
+        }
+{% if global.syslog_hosts is defined %}
+{% for syslog_host in global.syslog_hosts %}
+        host {{ syslog_host }} {
+            any any;
+        }
+{% endfor %}
+{% endif %}
+        file interactive-commands {
+            interactive-commands any;
+        }
+        file security {
+            authorization info;
+        }
+        file user_log {
+            user info;
+            explicit-priority;
+        }
+        file filter {
+            firewall any;
+        }
+        time-format millisecond;
+    }
+    ntp {
+{% for ntp_server in global.ntp_servers %}
+        server {{ ntp_server }};
+{% endfor %}
+    }
+}
+interfaces {
+{% if vqfx is defined %}
+    {{ mgmt_port }} {
+        unit 0 {
+            family inet {
+              dhcp;
+            }
+        }
+    }
+    em1 {
+        unit 0 {
+            family inet {
+                address 169.254.0.2/24;
+            }
+        }
+    }
+{% else %}
+    {{ mgmt_port }} {
+        unit 0 {
+            family inet {
+{% if inventory_hostname in groups["qfx5000"] %} 
+              filter {
+                  input ROUTER_PROTECT;
+              }
+{% endif %}			
+              address {{ ansible_ssh_host }}/{{ mgmt_sub_mask }};
+            }
+        }
+    }
+{% endif %}
+    lo0 {
+        unit 0 {
+            family inet {
+                filter {
+                    input ROUTER_PROTECT;
+                }
+                address {{ loopback_ip }}/32
+            }
+        }
+    }
+}
+snmp {
+    location "{{ global.snmp.location }}";
+    contact "{{ global.snmp.contact }}";
+{% if global.snmp.trap_group is defined %}
+    trap-group {{global.snmp.trap_group}} {
+        targets {
+{% for target in global.snmp.trap_targets %}
+            {{ target }};
+{% endfor %}
+        }
+	}
+{% endif %}
+{% if global.snmp.clients is defined %}
+    client-list SNMP_CLIENTS {
+{% for client in global.snmp.clients %}
+        {{ client }};
+{% endfor %}
+    }
+{% endif %}
+{% for snmp in global.snmp.polling %}
+    community {{ snmp.community }} {
+        authorization read-only;
+{% if global.snmp.clients is defined %}
+        client-list-name SNMP_CLIENTS;
+{% endif %}
+    }
+{% endfor %}
+}
+{% if global.routes is defined %}
+routing-options {
+{% if global.routes.static is defined %}
+  static {
+{% for route, next_hop in global.routes.static.iteritems() %}
+    route {{ route }} {
+      next-hop {{ next_hop }};
+      retain;
+      no-readvertise;
+    }
+{% endfor %}
+  }
+{% endif %}
+}
+{% endif %}
+protocols {
+    lldp {
+        interface all;
+        port-id-subtype interface-name;
+        port-description-type interface-description;
+    }
+    layer2-control {
+        bpdu-block {
+            disable-timeout 30;
+        }
+    }
+    bgp {
+    log-updown;
+    }	
+}
+forwarding-options {
+    storm-control-profiles default {
+        all;
+    }
+{% if global.erspan_host is defined %}	
+	port-mirroring {
+		instance {
+			MIRROR {
+				family inet {
+					output {
+						ip-address {{global.erspan_host}};
+					}
+				}
+			}
+		}
+	}
+{% endif %}
+}
+policy-options {
+    prefix-list IPV4_INTERFACES {
+        apply-path "interfaces <*> unit <*> family inet address <*>";
+    }
+    prefix-list BGP_NEIGHBOR {
+        apply-path "protocols bgp group <*> neighbor <*>";
+    }
+    prefix-list DNS_SERVERS {
+        apply-path "system name-server <*>";
+    }
+    prefix-list TACACS {
+        apply-path "system tacplus-server <*>";
+    }
+    prefix-list ALL_INTERFACE {
+        apply-path "interfaces <*> unit <*> family inet address <*>";
+    }
+    prefix-list SNMP {
+        apply-path "snmp client-list <*> <*>";
+    }
+    prefix-list RADIUS_SERVER {
+        apply-path "access radius-server <*>";
+    }
+    prefix-list NTP {
+        apply-path "system ntp server <*>";
+    }
+    prefix-list LO0 {
+        apply-path "interfaces lo0 unit 0 family inet address <*>";
+    }
+    prefix-list MGMT {
+{% for mgmt_address in global.mgmt_address %}
+		{{ mgmt_address }};
+{% endfor %}
+    }
+    prefix-list ICCP {
+        apply-path "protocols iccp peer <*>";
+    }
+    prefix-list ICCP_BACKUP {
+        apply-path "protocols iccp peer <*> backup-liveness-detection backup-peer-ip <*>";
+    }
+}
+firewall {
+    family inet {
+        filter ROUTER_PROTECT {
+            term ICMP {
+                from {
+                    protocol icmp;
+                    icmp-type [ echo-request echo-reply router-advertisement time-exceeded unreachable ];
+                }
+                then {
+                    policer 5M;
+                    accept;
+                }
+            }
+            term MGMT {
+                from {
+                    source-prefix-list {
+                        MGMT;
+                    }
+                    protocol [ icmp tcp udp ];
+                    destination-port [ ssh http ftp ftp-data snmp 830 ];
+                }
+                then accept;
+            }
+            term BGP_NEIGHBOR_SRC {
+                from {
+                    source-prefix-list {
+                        BGP_NEIGHBOR;
+                    }
+                    protocol tcp;
+                    source-port bgp;
+                }
+                then accept;
+            }
+            term BGP_NEIGHBOR_DST {
+                from {
+                    source-prefix-list {
+                        BGP_NEIGHBOR;
+                    }
+                    protocol tcp;
+                    destination-port bgp;
+                }
+                then accept;
+            }
+            term DNS {
+                from {
+                    source-prefix-list {
+                        DNS_SERVERS;
+                    }
+                    source-port 53;
+                }
+                then accept;
+            }
+            term NTP {
+                from {
+                    source-prefix-list {
+                        LO0;
+                        NTP;
+                    }
+                    protocol udp;
+                    source-port ntp;
+                }
+                then accept;
+            }
+            term TCP_ESTABLISHED {
+                from {
+                    protocol tcp;
+                    tcp-established;
+                }
+                then accept;
+            }
+            term VRRP {
+                from {
+                    destination-address {
+                        224.0.0.0/24;
+                    }
+                    protocol [ vrrp ah ];
+                }
+                then accept;
+            }
+            term ICCP {
+                from {
+                    source-prefix-list {
+                        ICCP;
+                        ICCP_BACKUP;
+                    }
+                    protocol [ tcp udp ];
+                }
+                then accept;
+            }
+            term BFD_DST {
+                from {
+                    protocol udp;
+                    destination-port [ 3784 4784 ];
+                }
+                then accept;
+            }
+            term BFD_SRC {
+                from {
+                    protocol udp;
+                    source-port [ 3784 4784 ];
+                }
+                then accept;
+            }			
+            term TACACS {
+                from {
+                    source-prefix-list {
+                        TACACS;
+                    }
+                    protocol tcp;
+                    source-port 49;
+                }
+                then accept;
+            }
+            term OSPF {
+                from {
+                    protocol ospf;
+                }
+                then accept;
+            }
+            term SNMP {
+                from {
+                    source-prefix-list {
+                        SNMP;
+                    }
+                    protocol udp;
+                    destination-port 161;
+                }
+                then accept;
+            }
+            term DISCARD {
+                then {
+                    log;
+                    discard;
+                }
+            }
+        }
+    }
+    policer 5M {
+        if-exceeding {
+            bandwidth-limit 5m;
+            burst-size-limit 500k;
+        }
+        then discard;
+    }
+}
+event-options {
+    policy SNMP_LINK_UP_TO_WARNING {
+        events snmp_trap_link_up;
+        then {
+            priority-override {
+                severity warning;
+            }
+        }
+    }
+}
+{% if inventory_hostname in groups["qfx5000"] %}
+class-of-service  {
+    classifiers {
+        ieee-802.1 802_1_P_CLASSIFIER {
+            forwarding-class best-effort {
+                loss-priority low code-points [ 000 001 010 011 100 101 ];
+            }
+            forwarding-class network-control {
+                loss-priority low code-points [ 110 111 ];
+            }
+        }
+    }
+    drop-profiles {
+        DP_BE_LOW {
+            interpolate {
+                fill-level [ 70 90 ];
+                drop-probability [ 0 70 ];
+            }
+        }
+        DP_NC {
+            interpolate {
+                fill-level [ 80 100 ];
+                drop-probability [ 0 100 ];
+            }
+        }
+    }
+    shared-buffer {
+        ingress {
+            percent 100;
+            buffer-partition lossless {
+                percent 5;
+            }
+            buffer-partition lossless-headroom {
+                percent 0;
+            }
+            buffer-partition lossy {
+                percent 95;
+            }
+        }
+        egress {
+            percent 100;                    
+            buffer-partition lossless {
+                percent 5;
+            }
+            buffer-partition lossy {
+                percent 75;
+            }
+            buffer-partition multicast {
+                percent 20;
+            }
+        }
+    }
+    forwarding-classes {
+        class best-effort queue-num 0;
+        class network-control queue-num 7;
+    }
+    traffic-control-profiles {
+        BE_TCP {
+            scheduler-map BE_MAP;
+            shaping-rate percent 100;
+            guaranteed-rate percent 100;
+        }
+    }
+    forwarding-class-sets {
+        BEST_EFFORT_PG {
+            class best-effort;
+            class network-control;
+        }
+    }
+    interfaces {
+        et-* {
+            forwarding-class-set {
+                BEST_EFFORT_PG {
+                    output-traffic-control-profile BE_TCP;
+                }
+            }
+            unit 0 {
+                classifiers {
+                    ieee-802.1 802_1_P_CLASSIFIER;
+                }
+            }
+        }
+        ge-* {
+            forwarding-class-set {
+                BEST_EFFORT_PG {
+                    output-traffic-control-profile BE_TCP;
+                }
+            }
+            unit 0 {
+                classifiers {
+                    ieee-802.1 802_1_P_CLASSIFIER;
+                }
+            }
+        }
+        xe-* {
+            forwarding-class-set {
+                BEST_EFFORT_PG {
+                    output-traffic-control-profile BE_TCP;
+                }
+            }
+            unit 0 {
+                classifiers {
+                    ieee-802.1 802_1_P_CLASSIFIER;
+                }
+            }
+        }
+        ae* {
+            forwarding-class-set {
+                BEST_EFFORT_PG {
+                    output-traffic-control-profile BE_TCP;
+                }
+            }
+            unit 0 {
+                classifiers {
+                    ieee-802.1 802_1_P_CLASSIFIER;
+                }
+            }                               
+        }
+    }
+    scheduler-maps {
+        BE_MAP {
+            forwarding-class best-effort scheduler BE_SCHED;
+            forwarding-class network-control scheduler NC_SCHED;
+        }
+    }
+    schedulers {
+        BE_SCHED {
+            transmit-rate percent 98;
+            shaping-rate percent 100;
+            buffer-size percent 95;
+            priority low;
+            drop-profile-map loss-priority low protocol any drop-profile DP_BE_LOW;
+        }
+        NC_SCHED {
+            transmit-rate percent 2;
+            shaping-rate percent 100;
+            priority low;
+            drop-profile-map loss-priority low protocol any drop-profile DP_NC;
+        }
+    }
+}
+{% endif %}
+{% if inventory_hostname in groups["qfx10000"] %}
+class-of-service  {
+    classifiers {
+    	ieee-802.1 802_1_P_CLASSIFIER {
+    		forwarding-class best-effort {
+    			loss-priority low code-points [ 000 001 010 011 100 101 ];
+    		}
+    		forwarding-class network-control {
+    			loss-priority low code-points [ 110 111 ];
+    		}
+    	}
+    }
+    drop-profiles {
+    	DP_BE_LOW {
+    		interpolate {
+    			fill-level [ 70 90 ];
+    			drop-probability [ 0 70 ];
+    		}
+    	}
+    	DP_NC {
+    		interpolate {
+    			fill-level [ 80 100 ];
+    			drop-probability [ 0 100 ];
+    		}
+    	}
+    }
+    forwarding-classes {
+    	class best-effort queue-num 0;
+    	class network-control queue-num 7;
+    }
+    interfaces {
+    	et-* {
+    		scheduler-map BE_MAP;
+    		unit * {
+    			classifiers {
+    				ieee-802.1 802_1_P_CLASSIFIER;
+    			}
+    		}
+    	}
+    	ge-* {
+    		scheduler-map BE_MAP;           
+    		unit * {
+    			classifiers {
+    				ieee-802.1 802_1_P_CLASSIFIER;
+    			}
+    		}
+    	}
+    	xe-* {
+    		scheduler-map BE_MAP;
+    		unit * {
+    			classifiers {
+    				ieee-802.1 802_1_P_CLASSIFIER;
+    			}
+    		}
+    	}
+    	ae* {
+    		scheduler-map BE_MAP;
+    		unit * {
+    			classifiers {
+    				ieee-802.1 802_1_P_CLASSIFIER;
+    			}
+    		}
+    	}
+    }
+    scheduler-maps {
+    	BE_MAP {
+    		forwarding-class best-effort scheduler BE_SCHED;
+    		forwarding-class network-control scheduler NC_SCHED;
+    	}
+    }
+    schedulers {
+    	BE_SCHED {
+    		transmit-rate percent 98;
+    		buffer-size percent 95;
+    		priority low;
+    		drop-profile-map loss-priority low protocol any drop-profile DP_BE_LOW;
+    	}
+    	NC_SCHED {
+    		transmit-rate percent 2;        
+    		priority low;
+    		drop-profile-map loss-priority low protocol any drop-profile DP_NC;
+    	}
+    }
+}
+{% endif %}
+services {
+    rpm {
+        bgp {
+            probe-type icmp-ping;
+            probe-count 15;
+            probe-interval 10;
+            test-interval 1;
+            history-size 512;
+            data-size 8000;
+        }
+    }
+}

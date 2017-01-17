@@ -1,0 +1,12 @@
+
+underlay:
+    leaf: true
+    local:
+        asn: 65121
+    neighbors:
+      - interface: et-0/0/50
+        name: spine-01
+        peer_interface: et-0/0/3
+        connector: TEST 123
+        peer_ip: 10.15.8.0
+        local_ip: 10.15.8.1
