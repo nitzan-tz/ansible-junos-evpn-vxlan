@@ -35,6 +35,7 @@ interfaces {
         }
 {% endif %}
 {% if interface.mode == 'aggregate' %}
+        hold-time up 60000 down 0;
         ether-options {
             802.3ad {{ interface.parent }};
         }

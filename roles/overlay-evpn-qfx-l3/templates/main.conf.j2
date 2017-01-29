@@ -105,7 +105,7 @@ interfaces {
 {% for bd in tenant.bridge_domains %}
 {% if bd.local_ip is defined %}
         unit {{ bd.vlan_id }} {
-		    proxy-macip-advertisement
+            proxy-macip-advertisement;
             description " * TENANT {{tenant.id}} - vlan {{bd.vlan_id}} - vni {{bd.vni_id}} {%if bd.description is defined %}{{bd.description}}{% endif %}"
             family inet {
                 address {{ bd.local_ip }}/{{ bd.mask }} {
