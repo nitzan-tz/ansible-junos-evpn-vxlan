@@ -26,6 +26,7 @@ chassis {
 {% endfor %}
 protocols {
     ospf {
+        overload timeout 180;
         area 0.0.0.0 {
 {% for neighbor in underlay.neighbors %}
             interface {{ neighbor.interface }} {
