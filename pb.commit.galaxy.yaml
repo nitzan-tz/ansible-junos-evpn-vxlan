@@ -21,4 +21,5 @@
         overwrite: yes
         replace: no
         timeout: 60
+        comment: "{{ comment }}"
         diffs_file: "config_diff//{{ inventory_hostname }}-{{ mydate }}.conf"

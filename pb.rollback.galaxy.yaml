@@ -18,5 +18,5 @@
         user: "{{ ansible_ssh_user }}"
         passwd: "{{ ansible_ssh_pass }}"
         diffs_file: "config_diff//{{ inventory_hostname }}-{{ mydate }}.conf"
-        rollback: 1
-        comment: "Rolled back by Ansible"
+        rollback: "{{rb_id}}"
+        comment: "Rolled back by Ansible pb.rollback.galaxy.yaml with rollback number {{rb_id}}"

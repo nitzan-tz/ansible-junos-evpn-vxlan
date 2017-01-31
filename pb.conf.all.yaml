@@ -83,9 +83,7 @@
 ###############################################################
 - name: Git commit
   hosts: localhost
-  become: true
-  become_user: nitzan
   tasks:
     - shell: git add .
-    - shell: git commit -m "Commit by Ansible"
+    - shell: git commit -m "{{ comment }}"
     - shell: git push -u origin master
