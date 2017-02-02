@@ -44,6 +44,7 @@ protocols {
         encapsulation vxlan;
         extended-vni-list [ {% for name, tenant in overlay.tenants.iteritems() %}{% for bd in tenant.bridge_domains %} {{ bd.vni_id }} {% endfor %}{% endfor %} ];
         multicast-mode ingress-replication;
+        default-gateway no-gateway-community;
         vni-options {
 {% for name, tenant in overlay.tenants.iteritems() %}
 {% for bd in tenant.bridge_domains %}
